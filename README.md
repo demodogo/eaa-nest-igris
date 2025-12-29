@@ -1,37 +1,37 @@
-# EAA - Enterprise Accreditation & Access Control System
+# EAA - Sistema de Acreditación y Control de Acceso Empresarial
 
-**Version:** 0.0.1  
-**Status:** Active Development  
-**Architecture:** Modular Monolith with Hexagonal Architecture  
+**Versión:** 0.0.1  
+**Estado:** Desarrollo Activo  
+**Arquitectura:** Modular Monolith con Hexagonal Architecture  
 **Framework:** NestJS + TypeScript
 
 ---
 
-## Overview
+## Descripción General
 
-Enterprise-grade accreditation management and operational control system engineered for industrial and corporate environments requiring regulatory compliance, granular access control, and operational resilience.
+Sistema de gestión de acreditaciones y control operacional de nivel empresarial diseñado para entornos industriales y corporativos que requieren cumplimiento normativo, control de acceso granular y resiliencia operacional.
 
-### Core Capabilities
+### Capacidades Principales
 
-- **Document Control:** Document lifecycle management with multi-stage approval workflows
-- **Physical Access Control:** Real-time policy evaluation with QR-based authentication
-- **Vehicle Management:** Vehicle accreditation and access authorization
-- **Cafeteria Control:** Meal entitlement management and consumption tracking
-- **Multi-Tenancy:** Complete data isolation with tenant-aware operations
-- **Audit Trail:** Comprehensive event logging with tamper-evident storage
+- **Control Documental:** Gestión del ciclo de vida de documentos con flujos de aprobación multi-etapa
+- **Control de Acceso Físico:** Evaluación de políticas en tiempo real con autenticación basada en QR
+- **Gestión de Vehículos:** Acreditación de vehículos y autorización de acceso
+- **Control de Casino:** Gestión de derechos de comida y seguimiento de consumo
+- **Multi-Tenancy:** Aislamiento completo de datos con operaciones conscientes del tenant
+- **Audit Trail:** Registro exhaustivo de eventos con almacenamiento a prueba de manipulación
 
 ---
 
-## Architecture
+## Arquitectura
 
-### Design Principles
+### Principios de Diseño
 
-- **Modular Monolith:** Single deployable artifact with explicit module boundaries
-- **Hexagonal Architecture:** Clean separation between domain, application, infrastructure, and interface layers
-- **Remote-First Development:** No Docker required for local development
-- **Cloud Portability:** Infrastructure abstracted behind port interfaces
+- **Modular Monolith:** Artefacto desplegable único con límites de módulos explícitos
+- **Hexagonal Architecture:** Separación clara entre capas de dominio, aplicación, infraestructura e interfaz
+- **Desarrollo Remote-First:** No requiere Docker para desarrollo local
+- **Portabilidad Cloud:** Infraestructura abstraída detrás de interfaces port
 
-### Module Structure
+### Estructura de Módulos
 
 ```
 src/
@@ -46,70 +46,75 @@ src/
 └── config/            # Configuration management
 ```
 
-### Architectural Layers
+### Capas Arquitectónicas
 
-- **Domain Layer:** Pure business logic, zero framework dependencies
-- **Application Layer:** Use case orchestration, port interfaces
-- **Infrastructure Layer:** Concrete implementations (database, storage, OIDC)
-- **Interface Layer:** HTTP controllers, validators, presenters
+- **Domain Layer:** Lógica de negocio pura, cero dependencias de frameworks
+- **Application Layer:** Orquestación de casos de uso, interfaces port
+- **Infrastructure Layer:** Implementaciones concretas (database, storage, OIDC)
+- **Interface Layer:** Controladores HTTP, validadores, presentadores
 
-> **Note:** See `AGENTS.md` for comprehensive architectural guidelines and engineering standards.
+> **Nota:** Consulta `AGENTS.md` para directrices arquitectónicas completas y estándares de ingeniería.
 
 ---
 
-## Technology Stack
+## Stack Tecnológico
 
-### Core Framework
+### Framework Principal
+
 - **NestJS 11.x** - Enterprise Node.js framework
 - **TypeScript 5.x** - Type-safe development
 - **RxJS 7.x** - Reactive programming
 
-### Authentication & Security
+### Autenticación y Seguridad
+
 - **OpenID Connect (OIDC)** - SSO authentication via Keycloak
 - **jsonwebtoken** - JWT token handling
 - **jwks-rsa** - JWKS key resolution
 
-### Validation & Transformation
+### Validación y Transformación
+
 - **class-validator** - DTO validation
 - **class-transformer** - Object transformation
 - **Zod** - Schema validation
 
-### API Documentation
+### Documentación de API
+
 - **@nestjs/swagger** - OpenAPI/Swagger integration
 
-### Infrastructure (Remote Services)
-- **PostgreSQL** - Primary data store (Railway)
-- **S3-Compatible Storage** - Document repository (Railway Buckets)
-- **Keycloak** - Identity provider (Railway)
+### Infraestructura (Servicios Remotos)
+
+- **PostgreSQL** - Almacenamiento de datos principal (Railway)
+- **S3-Compatible Storage** - Repositorio de documentos (Railway Buckets)
+- **Keycloak** - Proveedor de identidad (Railway)
 
 ---
 
-## Getting Started
+## Comenzando
 
-### Prerequisites
+### Prerequisitos
 
-- **Node.js:** 18.x or higher
-- **npm:** 9.x or higher
-- **Remote Services:** Access to Railway infrastructure (PostgreSQL, S3, Keycloak)
+- **Node.js:** 18.x o superior
+- **npm:** 9.x o superior
+- **Servicios Remotos:** Acceso a infraestructura Railway (PostgreSQL, S3, Keycloak)
 
-### Installation
+### Instalación
 
 ```bash
-# Clone repository
+# Clonar repositorio
 git clone <repository-url>
 cd eaa-nest-igris
 
-# Install dependencies
+# Instalar dependencias
 npm install
 
-# Configure environment
+# Configurar entorno
 cp .env.example .env
-# Edit .env with your credentials
+# Editar .env con tus credenciales
 ```
 
-### Environment Configuration
+### Configuración de Entorno
 
-Create a `.env` file based on `.env.example`:
+Crea un archivo `.env` basado en `.env.example`:
 
 ```env
 # Application
@@ -134,60 +139,60 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_REGION=us-east-1
 ```
 
-### Development
+### Desarrollo
 
 ```bash
-# Start development server with hot reload
+# Iniciar servidor de desarrollo con hot reload
 npm run start:dev
 
-# Start with debug mode
+# Iniciar con modo debug
 npm run start:debug
 
-# Build for production
+# Construir para producción
 npm run build
 
-# Start production server
+# Iniciar servidor de producción
 npm run start:prod
 ```
 
-### Testing
+### Testing (Pruebas)
 
 ```bash
-# Run unit tests
+# Ejecutar pruebas unitarias
 npm test
 
-# Run tests in watch mode
+# Ejecutar pruebas en modo watch
 npm test:watch
 
-# Run tests with coverage
+# Ejecutar pruebas con cobertura
 npm test:cov
 
-# Run e2e tests
+# Ejecutar pruebas e2e
 npm run test:e2e
 ```
 
-### Code Quality
+### Calidad de Código
 
 ```bash
-# Lint code
+# Analizar código
 npm run lint
 
-# Format code
+# Formatear código
 npm run format
 ```
 
 ---
 
-## API Documentation
+## Documentación de API
 
-Once the application is running, access the interactive API documentation:
+Una vez que la aplicación esté ejecutándose, accede a la documentación interactiva de la API:
 
 - **Swagger UI:** `http://localhost:3001/api/docs`
 - **OpenAPI Spec:** `http://localhost:3001/api/docs-json`
 
 ---
 
-## Project Structure
+## Estructura del Proyecto
 
 ```
 eaa-hono-igris/
@@ -215,26 +220,28 @@ eaa-hono-igris/
 
 ---
 
-## Development Philosophy
+## Filosofía de Desarrollo
 
-### Remote-First Architecture
+### Arquitectura Remote-First
 
-This project adopts a **remote-first development model** that does not require Docker for local development.
+Este proyecto adopta un **modelo de desarrollo remote-first** que no requiere Docker para desarrollo local.
 
-**Benefits:**
-- Hardware flexibility (supports low-memory laptops, ARM architectures)
-- Faster onboarding without Docker Desktop licensing issues
-- Development topology mirrors production cloud deployment
-- Reduced local resource consumption
+**Beneficios:**
 
-**Requirements:**
-- Stable internet connectivity
-- Access to remote infrastructure (Railway services)
-- Environment variables properly configured
+- Flexibilidad de hardware (soporta laptops de baja memoria, arquitecturas ARM)
+- Onboarding más rápido sin problemas de licenciamiento de Docker Desktop
+- La topología de desarrollo refleja el despliegue cloud de producción
+- Consumo reducido de recursos locales
+
+**Requisitos:**
+
+- Conectividad a internet estable
+- Acceso a infraestructura remota (servicios Railway)
+- Variables de entorno configuradas correctamente
 
 ### Hexagonal Architecture
 
-All infrastructure dependencies are abstracted behind **port interfaces**:
+Todas las dependencias de infraestructura están abstraídas detrás de **interfaces port**:
 
 ```typescript
 // ✅ Domain/Application layers depend on ports
@@ -244,113 +251,118 @@ import { OidcClientPort } from '../application/ports/oidc-client.port';
 import { OidcClient } from '../infrastructure/oidc.client';
 ```
 
-This enables:
-- **Testability:** Easy mocking of infrastructure
-- **Cloud Portability:** Swap providers without changing business logic
-- **Clean Architecture:** Clear separation of concerns
+Esto permite:
+
+- **Testabilidad:** Fácil simulación de infraestructura
+- **Portabilidad Cloud:** Cambiar proveedores sin modificar lógica de negocio
+- **Clean Architecture:** Separación clara de responsabilidades
 
 ---
 
-## Module Development Status
+## Estado de Desarrollo de Módulos
 
-| Module | Status | Description |
-|--------|--------|-------------|
-| **auth** | ✅ Active | OIDC authentication, JWT validation |
-| **health** | ✅ Active | Health check endpoints |
-| **documental** | 🚧 Planned | Document lifecycle management |
-| **access** | 🚧 Planned | Physical access control |
-| **vehicle** | 🚧 Planned | Vehicle accreditation |
-| **casino** | 🚧 Planned | Cafeteria/dining control |
-| **reporting** | 🚧 Planned | Analytics and reporting |
+| Módulo         | Estado         | Descripción                             |
+| -------------- | -------------- | --------------------------------------- |
+| **auth**       | ✅ Activo      | Autenticación OIDC, validación JWT      |
+| **health**     | ✅ Activo      | Endpoints de health check               |
+| **documental** | 🚧 Planificado | Gestión del ciclo de vida de documentos |
+| **access**     | 🚧 Planificado | Control de acceso físico                |
+| **vehicle**    | 🚧 Planificado | Acreditación de vehículos               |
+| **casino**     | 🚧 Planificado | Control de casino/comedor               |
+| **reporting**  | 🚧 Planificado | Analítica y reportes                    |
 
 ---
 
-## Key Architectural Patterns
+## Patrones Arquitectónicos Clave
 
 ### Multi-Tenancy
-All database entities include `tenant_id` for complete data isolation:
+
+Todas las entidades de base de datos incluyen `tenant_id` para aislamiento completo de datos:
 
 ```typescript
 // ✅ Tenant-aware query
-const document = await db.documents.findUnique({ 
-  where: { 
-    id: documentId,
-    tenant_id: userContext.tenantId 
-  } 
+const document = await db.documents.findUnique({
+	where: {
+		id: documentId,
+		tenant_id: userContext.tenantId,
+	},
 });
 ```
 
 ### Policy Evaluator
-Deterministic authorization engine returning `ALLOW` or `DENY` with structured reason codes:
+
+Motor de autorización determinístico que retorna `ALLOW` o `DENY` con códigos de razón estructurados:
 
 ```typescript
 interface EvaluationResult {
-  decision: 'ALLOW' | 'DENY';
-  reason_codes: string[]; // e.g., ['DOC_EXPIRED', 'OUTSIDE_TIME_WINDOW']
-  evaluated_at: Date;
+	decision: 'ALLOW' | 'DENY';
+	reason_codes: string[]; // e.g., ['DOC_EXPIRED', 'OUTSIDE_TIME_WINDOW']
+	evaluated_at: Date;
 }
 ```
 
 ### Audit Trail
-All critical operations generate immutable audit events:
+
+Todas las operaciones críticas generan eventos de auditoría inmutables:
 
 ```typescript
 interface AuditEvent {
-  id: string;
-  timestamp: string;
-  tenant_id: string;
-  actor: ActorContext;
-  action: string;
-  outcome: 'SUCCESS' | 'FAILURE';
-  reason_codes?: string[];
+	id: string;
+	timestamp: string;
+	tenant_id: string;
+	actor: ActorContext;
+	action: string;
+	outcome: 'SUCCESS' | 'FAILURE';
+	reason_codes?: string[];
 }
 ```
 
 ---
 
-## Contributing
+## Contribución
 
-### Code Standards
+### Estándares de Código
 
-1. **Follow Hexagonal Architecture:** Domain/application layers must not import infrastructure
-2. **Port Interfaces:** All external dependencies behind port interfaces
-3. **Multi-Tenancy:** Always filter by `tenant_id`
-4. **Audit Logging:** Log all critical operations
-5. **Reason Codes:** Use structured codes, not free-form text
-6. **Type Safety:** Leverage TypeScript strictly
+1. **Seguir Hexagonal Architecture:** Las capas domain/application no deben importar infrastructure
+2. **Port Interfaces:** Todas las dependencias externas detrás de interfaces port
+3. **Multi-Tenancy:** Siempre filtrar por `tenant_id`
+4. **Audit Logging:** Registrar todas las operaciones críticas
+5. **Reason Codes:** Usar códigos estructurados, no texto libre
+6. **Type Safety:** Aprovechar TypeScript estrictamente
 
-### Pull Request Checklist
+### Checklist de Pull Request
 
-- [ ] Code follows architectural guidelines in `AGENTS.md`
-- [ ] Unit tests added/updated
-- [ ] Integration tests for new features
-- [ ] API documentation updated (Swagger annotations)
-- [ ] Environment variables documented in `.env.example`
-- [ ] No framework imports in domain/application layers
-
----
-
-## Documentation
-
-- **`AGENTS.md`** - Comprehensive architectural guidelines and engineering standards
-- **`docs/hitos/`** - Project milestones and development phases
-- **`docs/DEVELOPMENT_INFRA.md`** - Infrastructure setup and deployment
+- [ ] El código sigue las directrices arquitectónicas en `AGENTS.md`
+- [ ] Pruebas unitarias agregadas/actualizadas
+- [ ] Pruebas de integración para nuevas funcionalidades
+- [ ] Documentación de API actualizada (anotaciones Swagger)
+- [ ] Variables de entorno documentadas en `.env.example`
+- [ ] Sin imports de frameworks en capas domain/application
 
 ---
 
-## License
+## Documentación
 
-UNLICENSED - Private/Proprietary
-
----
-
-## Support
-
-For questions or issues:
-1. Review `AGENTS.md` for architectural guidance
-2. Check API documentation at `/api/docs`
-3. Contact the development team
+- **`AGENTS.md`** - Directrices arquitectónicas completas y estándares de ingeniería
+- **`docs/hitos/`** - Hitos del proyecto y fases de desarrollo
+- **`docs/DEVELOPMENT_INFRA.md`** - Configuración de infraestructura y despliegue
 
 ---
 
-**Built with ❤️ for enterprise-grade access control**
+## Licencia
+
+UNLICENSED - Privado/Propietario
+
+---
+
+## Soporte
+
+Para preguntas o problemas:
+
+1. Revisa `AGENTS.md` para orientación arquitectónica
+2. Consulta la documentación de API en `/api/docs`
+3. Contacta al equipo de desarrollo
+
+---
+
+**Construido con ❤️ para control de acceso de nivel empresarial**
