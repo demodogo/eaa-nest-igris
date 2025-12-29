@@ -1,0 +1,53 @@
+name: CD Pipeline - Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Railway
+        uses: bervProject/railway-deploy@main
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: ${{ secrets.RAILWAY_SERVICE_NAME }}
+
+      - name: Notify deployment
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "✅ Deployment successful to Railway",
+              attachments: [{
+                color: 'good',
+                text: `Commit: ${process.env.AS_COMMIT}\nAuthor: ${process.env.AS_AUTHOR}\nBranch: ${process.env.AS_REF}`
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
