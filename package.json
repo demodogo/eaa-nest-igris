@@ -8,6 +8,7 @@
 	"scripts": {
 		"build": "nest build",
 		"build:ci": "nest build",
+		"typecheck": "tsc --noEmit",
 		"lint:staged": "lint-staged",
 		"test:ci": "jest --ci --coverage --maxWorkers=2 --passWithNoTests",
 		"format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
