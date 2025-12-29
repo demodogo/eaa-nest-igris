@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id String @id @default(uuid())
+  slug String @unique
+  name String @unique
+  description String?
+  active Boolean @default(true)
+  settings Json @default("{}")
+  eaaContractExpiresAt DateTime? @db.Date @map("eaa_contract_expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id String @id @default(uuid())
+  tenantId String @map("tenat_id")
+
+  keycloakId String @unique @map("keycloak_id")
+  email String
+  emailVerified Boolean @default(false) @map("email_verified")
+
+  firstName String? @map("first_name")
+  lastName String? @map("last_name")
+  phoneNumber String? @map("phone_number")
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([keycloakId])
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@map("users")
+}
+
+
+enum AuditLogOutcome {
+  Success
+  Failure
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  action String
+  entityType String @map("entity_type")
+  entityId String @map("entity_id")
+
+  actorId String @map("actor_id")
+  actorEmail String? @map("actor_email")
+
+  metadata Json @default("{}")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  outcome AuditLogOutcome
+  reasonCodes String[] @map("reason_codes")
+
+  timestamp DateTime @default(now())
+
+  @@index([tenantId, timestamp])
+  @@index([entityType, entityId])
+  @@index([actorId])
+
+  @@map("audit_logs")
+}
