@@ -28,9 +28,9 @@ Este documento establece la arquitectura de infraestructura de desarrollo, topol
 
 ---
 
-## 1. Architecture Overview
+## 1. Descripción General de la Arquitectura
 
-### 1.1 Topology Diagram
+### 1.1 Diagrama de Topología
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -65,53 +65,53 @@ Este documento establece la arquitectura de infraestructura de desarrollo, topol
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Service Inventory
+### 1.2 Inventario de Servicios
 
-| Service                  | Purpose                 | Provider                     | Connectivity                      | Data Persistence                    |
-| ------------------------ | ----------------------- | ---------------------------- | --------------------------------- | ----------------------------------- |
-| **Application Database** | Primary data store      | Railway PostgreSQL           | Private network + public endpoint | Persistent volume                   |
-| **Identity Provider**    | SSO/OIDC authentication | Keycloak (Railway template)  | Public HTTPS endpoint             | Persistent via dedicated PostgreSQL |
-| **Keycloak Database**    | Identity provider state | Railway PostgreSQL           | Private network (Keycloak-only)   | Persistent volume                   |
-| **Object Storage**       | Document repository     | Railway S3-compatible bucket | S3 API over HTTPS                 | Persistent object storage           |
+| Servicio                 | Propósito                         | Proveedor                    | Conectividad                   | Persistencia de Datos                 |
+| ------------------------ | --------------------------------- | ---------------------------- | ------------------------------ | ------------------------------------- |
+| **Application Database** | Almacenamiento de datos principal | Railway PostgreSQL           | Red privada + endpoint público | Volumen persistente                   |
+| **Identity Provider**    | Autenticación SSO/OIDC            | Keycloak (template Railway)  | Endpoint HTTPS público         | Persistente vía PostgreSQL dedicado   |
+| **Keycloak Database**    | Estado del proveedor de identidad | Railway PostgreSQL           | Red privada (solo Keycloak)    | Volumen persistente                   |
+| **Object Storage**       | Repositorio de documentos         | Railway S3-compatible bucket | S3 API sobre HTTPS             | Almacenamiento de objetos persistente |
 
-### 1.3 Network Architecture
+### 1.3 Arquitectura de Red
 
-**Connectivity Patterns:**
+**Patrones de Conectividad:**
 
-- **Local → Railway Services:** HTTPS over public internet with TLS 1.3
-- **Railway Internal:** Private network for Keycloak ↔ Keycloak DB (no egress charges)
-- **Service Discovery:** Railway-provided DNS and connection strings
-- **Firewall:** Railway-managed, no manual security group configuration required
+- **Local → Servicios Railway:** HTTPS sobre internet pública con TLS 1.3
+- **Railway Interno:** Red privada para Keycloak ↔ Keycloak DB (sin cargos de egreso)
+- **Service Discovery:** DNS y connection strings provistos por Railway
+- **Firewall:** Administrado por Railway, no requiere configuración manual de security groups
 
-**Implementation Suggestion:**
+**Sugerencia de Implementación:**
 
-- Use Railway's private networking for inter-service communication when available
-- Implement connection pooling (PgBouncer) for database connections
-- Add retry logic with exponential backoff for transient network failures
+- Usar networking privado de Railway para comunicación entre servicios cuando esté disponible
+- Implementar connection pooling (PgBouncer) para conexiones de base de datos
+- Agregar lógica de reintentos con exponential backoff para fallos de red transitorios
 
 ---
 
-## 2. Service Specifications
+## 2. Especificaciones de Servicios
 
-### 2.1 Application Database (PostgreSQL)
+### 2.1 Base de Datos de Aplicación (PostgreSQL)
 
-**Service Identifier:** `postgres-app`  
-**Purpose:** Primary relational database for application domain data  
-**Technology:** Railway PostgreSQL 15+  
-**Resource Allocation:** Configurable via Railway dashboard
+**Identificador de Servicio:** `postgres-app`  
+**Propósito:** Base de datos relacional principal para datos del dominio de aplicación  
+**Tecnología:** Railway PostgreSQL 15+  
+**Asignación de Recursos:** Configurable vía dashboard de Railway
 
-**Schema Domains:**
+**Dominios de Schema:**
 
-- Tenant management and multi-tenancy isolation
-- Organization and personnel records
-- Document folders and metadata
-- Access control events and audit logs
-- Vehicle registrations and accreditations
-- Cafeteria entitlements and consumption records
+- Gestión de tenants y aislamiento multi-tenancy
+- Registros de organizaciones y personal
+- Carpetas de documentos y metadatos
+- Eventos de control de acceso y logs de auditoría
+- Registros de vehículos y acreditaciones
+- Derechos de casino y registros de consumo
 
-**Connection Configuration:**
+**Configuración de Conexión:**
 
-**Environment Variable:**
+**Variable de Entorno:**
 
 ```bash
 DATABASE_URL=postgresql://user:password@host.railway.app:5432/railway
@@ -137,40 +137,40 @@ datasource db {
 }
 ```
 
-**Operational Constraints:**
+**Restricciones Operacionales:**
 
-- ❌ NEVER modify credentials manually (managed by Railway)
-- ❌ NEVER execute schema changes without migrations
-- ✅ ALWAYS use versioned migrations (Prisma Migrate, Alembic, Flyway)
-- ✅ ALWAYS include rollback scripts for migrations
-- ✅ ALWAYS test migrations on database copy before applying
+- ❌ NUNCA modificar credenciales manualmente (administradas por Railway)
+- ❌ NUNCA ejecutar cambios de schema sin migraciones
+- ✅ SIEMPRE usar migraciones versionadas (Prisma Migrate, Alembic, Flyway)
+- ✅ SIEMPRE incluir scripts de rollback para migraciones
+- ✅ SIEMPRE probar migraciones en copia de base de datos antes de aplicar
 
-**Backup Strategy:**
+**Estrategia de Backup:**
 
-- Railway automatic backups: Daily snapshots (retention per plan)
-- Manual backup before major migrations: `pg_dump` to local storage
-- Restore procedure documented in runbook
+- Backups automáticos de Railway: Snapshots diarios (retención según plan)
+- Backup manual antes de migraciones mayores: `pg_dump` a almacenamiento local
+- Procedimiento de restauración documentado en runbook
 
-**Performance Monitoring:**
+**Monitoreo de Performance:**
 
-- Enable slow query logging (>100ms)
-- Monitor connection pool utilization
-- Track query performance with `pg_stat_statements`
+- Habilitar logging de queries lentas (>100ms)
+- Monitorear utilización del connection pool
+- Rastrear performance de queries con `pg_stat_statements`
 
-**Implementation Suggestion:**
+**Sugerencia de Implementación:**
 
-- Use read replicas for reporting queries (when Railway supports)
-- Implement query result caching for expensive aggregations
-- Add database connection health checks in application startup
+- Usar read replicas para queries de reportes (cuando Railway lo soporte)
+- Implementar caché de resultados de queries para agregaciones costosas
+- Agregar health checks de conexión de base de datos en inicio de aplicación
 
 ---
 
-### 2.2 Identity Provider (Keycloak)
+### 2.2 Proveedor de Identidad (Keycloak)
 
-**Service Identifier:** `keycloak-dev`  
-**Purpose:** OpenID Connect (OIDC) authentication and authorization provider  
-**Technology:** Keycloak 23+ (Railway community template)  
-**Deployment Model:** Keycloak + dedicated PostgreSQL database
+**Identificador de Servicio:** `keycloak-dev`  
+**Propósito:** Proveedor de autenticación y autorización OpenID Connect (OIDC)  
+**Tecnología:** Keycloak 23+ (template comunitario de Railway)  
+**Modelo de Despliegue:** Keycloak + base de datos PostgreSQL dedicada
 
 **Architecture:**
 
@@ -485,7 +485,7 @@ const downloadUrl = await s3Client.getSignedUrl('getObject', {
 
 ### 3.1 Environment Variables Specification
 
-**File:** `.env.local` (NEVER committed to version control)
+**File:** `.env` (NEVER committed to version control)
 
 **Complete Configuration Template:**
 
@@ -736,7 +736,7 @@ runHealthChecks();
   - [ ] Storage quota not exceeded
 
 - [ ] **Local Configuration**
-  - [ ] `.env.local` file exists
+  - [ ] `.env` file exists
   - [ ] All required variables populated
   - [ ] Configuration validation passes
   - [ ] Health check script passes
@@ -889,7 +889,7 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 **Credential Management:**
 
-- ❌ NEVER commit `.env.local` to version control
+- ❌ NEVER commit `.env` to version control
 - ❌ NEVER share credentials via chat/email
 - ❌ NEVER use weak passwords (minimum 16 characters)
 - ✅ ALWAYS store credentials in password manager (1Password, LastPass, Bitwarden)
@@ -914,8 +914,8 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 | Secret                  | Rotation Frequency | Procedure                                                                      |
 | ----------------------- | ------------------ | ------------------------------------------------------------------------------ |
-| Database password       | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
-| Storage credentials     | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
+| Database password       | Quarterly          | Railway dashboard → Regenerate → Update `.env`                                 |
+| Storage credentials     | Quarterly          | Railway dashboard → Regenerate → Update `.env`                                 |
 | Keycloak admin password | Quarterly          | Keycloak console → Update → Store in password manager                          |
 | QR signing keys         | Every 90 days      | Generate new key pair → Update config → Maintain old key for validation period |
 | OIDC client secrets     | Annually           | Keycloak console → Regenerate → Update backend config                          |
