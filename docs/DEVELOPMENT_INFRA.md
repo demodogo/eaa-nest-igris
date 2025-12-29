@@ -485,7 +485,7 @@ const downloadUrl = await s3Client.getSignedUrl('getObject', {
 
 ### 3.1 Environment Variables Specification
 
-**File:** `.env.local` (NEVER committed to version control)
+**File:** `.env` (NEVER committed to version control)
 
 **Complete Configuration Template:**
 
@@ -736,7 +736,7 @@ runHealthChecks();
   - [ ] Storage quota not exceeded
 
 - [ ] **Local Configuration**
-  - [ ] `.env.local` file exists
+  - [ ] `.env` file exists
   - [ ] All required variables populated
   - [ ] Configuration validation passes
   - [ ] Health check script passes
@@ -889,7 +889,7 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 **Credential Management:**
 
-- ❌ NEVER commit `.env.local` to version control
+- ❌ NEVER commit `.env` to version control
 - ❌ NEVER share credentials via chat/email
 - ❌ NEVER use weak passwords (minimum 16 characters)
 - ✅ ALWAYS store credentials in password manager (1Password, LastPass, Bitwarden)
@@ -914,8 +914,8 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 | Secret                  | Rotation Frequency | Procedure                                                                      |
 | ----------------------- | ------------------ | ------------------------------------------------------------------------------ |
-| Database password       | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
-| Storage credentials     | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
+| Database password       | Quarterly          | Railway dashboard → Regenerate → Update `.env`                                 |
+| Storage credentials     | Quarterly          | Railway dashboard → Regenerate → Update `.env`                                 |
 | Keycloak admin password | Quarterly          | Keycloak console → Update → Store in password manager                          |
 | QR signing keys         | Every 90 days      | Generate new key pair → Update config → Maintain old key for validation period |
 | OIDC client secrets     | Annually           | Keycloak console → Regenerate → Update backend config                          |
