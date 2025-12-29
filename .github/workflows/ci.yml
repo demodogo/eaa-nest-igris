@@ -90,7 +90,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
 
-    # Solo ejecutar en PRs hacia main
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
 
     steps:
@@ -110,7 +109,6 @@ jobs:
         run: npm run test:e2e
         env:
           NODE_ENV: test
-          # Usar servicios de Railway para E2E
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           OIDC_ISSUER_URL: ${{ secrets.TEST_OIDC_ISSUER_URL }}
           OIDC_CLIENT_ID: ${{ secrets.TEST_OIDC_CLIENT_ID }}
