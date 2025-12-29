@@ -1,29 +1,30 @@
-# DEVELOPMENT_INFRA.md — Development Infrastructure Specification
+# DEVELOPMENT_INFRA.md — Especificación de Infraestructura de Desarrollo
 
-**Environment:** Development (Remote-First, Dockerless)  
-**Last Updated:** 2025-12-27  
-**Status:** Active (Baseline)  
-**Classification:** Internal Technical Documentation
+**Entorno:** Desarrollo (Remote-First, sin Docker)  
+**Última Actualización:** 2025-12-27  
+**Estado:** Activo (Baseline)  
+**Clasificación:** Documentación Técnica Interna
 
 ---
 
-## Document Purpose and Scope
+## Propósito y Alcance del Documento
 
-This document establishes the development infrastructure architecture, service topology, and operational procedures for the remote-first development environment. It serves as the authoritative reference for:
+Este documento establece la arquitectura de infraestructura de desarrollo, topología de servicios y procedimientos operacionales para el entorno de desarrollo remote-first. Sirve como referencia autoritativa para:
 
-- **Infrastructure Provisioning:** Complete specification of Railway-hosted services
-- **Local Development Setup:** Connection configuration and environment variables
-- **Service Integration:** Inter-service communication patterns and authentication flows
-- **Cloud Portability:** Migration path to AWS, Azure, or GCP
-- **Operational Procedures:** Health checks, troubleshooting, and maintenance
+- **Aprovisionamiento de Infraestructura:** Especificación completa de servicios alojados en Railway
+- **Configuración de Desarrollo Local:** Configuración de conexión y variables de entorno
+- **Integración de Servicios:** Patrones de comunicación entre servicios y flujos de autenticación
+- **Portabilidad Cloud:** Ruta de migración a AWS, Azure o GCP
+- **Procedimientos Operacionales:** Health checks, troubleshooting y mantenimiento
 
-### Design Principles
+### Principios de Diseño
 
-**Remote-First Architecture:** Development environment explicitly does not require Docker on local workstations, enabling:
-- Hardware flexibility (low-memory laptops, ARM architectures)
-- Consistent development topology across team members
-- Early validation of production-like infrastructure
-- Simplified onboarding without container orchestration complexity
+**Arquitectura Remote-First:** El entorno de desarrollo explícitamente no requiere Docker en estaciones de trabajo locales, permitiendo:
+
+- Flexibilidad de hardware (laptops de baja memoria, arquitecturas ARM)
+- Topología de desarrollo consistente entre miembros del equipo
+- Validación temprana de infraestructura similar a producción
+- Onboarding simplificado sin complejidad de orquestación de contenedores
 
 ---
 
@@ -66,22 +67,24 @@ This document establishes the development infrastructure architecture, service t
 
 ### 1.2 Service Inventory
 
-| Service | Purpose | Provider | Connectivity | Data Persistence |
-|---------|---------|----------|--------------|------------------|
-| **Application Database** | Primary data store | Railway PostgreSQL | Private network + public endpoint | Persistent volume |
-| **Identity Provider** | SSO/OIDC authentication | Keycloak (Railway template) | Public HTTPS endpoint | Persistent via dedicated PostgreSQL |
-| **Keycloak Database** | Identity provider state | Railway PostgreSQL | Private network (Keycloak-only) | Persistent volume |
-| **Object Storage** | Document repository | Railway S3-compatible bucket | S3 API over HTTPS | Persistent object storage |
+| Service                  | Purpose                 | Provider                     | Connectivity                      | Data Persistence                    |
+| ------------------------ | ----------------------- | ---------------------------- | --------------------------------- | ----------------------------------- |
+| **Application Database** | Primary data store      | Railway PostgreSQL           | Private network + public endpoint | Persistent volume                   |
+| **Identity Provider**    | SSO/OIDC authentication | Keycloak (Railway template)  | Public HTTPS endpoint             | Persistent via dedicated PostgreSQL |
+| **Keycloak Database**    | Identity provider state | Railway PostgreSQL           | Private network (Keycloak-only)   | Persistent volume                   |
+| **Object Storage**       | Document repository     | Railway S3-compatible bucket | S3 API over HTTPS                 | Persistent object storage           |
 
 ### 1.3 Network Architecture
 
 **Connectivity Patterns:**
+
 - **Local → Railway Services:** HTTPS over public internet with TLS 1.3
 - **Railway Internal:** Private network for Keycloak ↔ Keycloak DB (no egress charges)
 - **Service Discovery:** Railway-provided DNS and connection strings
 - **Firewall:** Railway-managed, no manual security group configuration required
 
 **Implementation Suggestion:**
+
 - Use Railway's private networking for inter-service communication when available
 - Implement connection pooling (PgBouncer) for database connections
 - Add retry logic with exponential backoff for transient network failures
@@ -98,6 +101,7 @@ This document establishes the development infrastructure architecture, service t
 **Resource Allocation:** Configurable via Railway dashboard
 
 **Schema Domains:**
+
 - Tenant management and multi-tenancy isolation
 - Organization and personnel records
 - Document folders and metadata
@@ -108,22 +112,25 @@ This document establishes the development infrastructure architecture, service t
 **Connection Configuration:**
 
 **Environment Variable:**
+
 ```bash
 DATABASE_URL=postgresql://user:password@host.railway.app:5432/railway
 ```
 
 **Connection String Format:**
+
 ```
 postgresql://[user]:[password]@[host]:[port]/[database]?sslmode=require
 ```
 
 **Connection Pooling (Recommended):**
+
 ```typescript
 // Prisma configuration
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  
+
   // Connection pool settings
   connection_limit = 10
   pool_timeout     = 20
@@ -131,6 +138,7 @@ datasource db {
 ```
 
 **Operational Constraints:**
+
 - ❌ NEVER modify credentials manually (managed by Railway)
 - ❌ NEVER execute schema changes without migrations
 - ✅ ALWAYS use versioned migrations (Prisma Migrate, Alembic, Flyway)
@@ -138,16 +146,19 @@ datasource db {
 - ✅ ALWAYS test migrations on database copy before applying
 
 **Backup Strategy:**
+
 - Railway automatic backups: Daily snapshots (retention per plan)
 - Manual backup before major migrations: `pg_dump` to local storage
 - Restore procedure documented in runbook
 
 **Performance Monitoring:**
+
 - Enable slow query logging (>100ms)
 - Monitor connection pool utilization
 - Track query performance with `pg_stat_statements`
 
 **Implementation Suggestion:**
+
 - Use read replicas for reporting queries (when Railway supports)
 - Implement query result caching for expensive aggregations
 - Add database connection health checks in application startup
@@ -162,6 +173,7 @@ datasource db {
 **Deployment Model:** Keycloak + dedicated PostgreSQL database
 
 **Architecture:**
+
 ```
 ┌─────────────────────────────────────────┐
 │           Keycloak Service              │
@@ -195,12 +207,14 @@ datasource db {
 **Environment Variables (Keycloak Service):**
 
 **Administrative Access:**
+
 ```bash
 KEYCLOAK_ADMIN=admin
 KEYCLOAK_ADMIN_PASSWORD=<strong-password>  # Store in password manager
 ```
 
 **Database Connection (Auto-configured by Railway template):**
+
 ```bash
 KC_DB=postgres
 KC_DB_URL=${{Postgres.DATABASE_URL}}
@@ -209,6 +223,7 @@ KC_DB_PASSWORD=${{Postgres.PGPASSWORD}}
 ```
 
 **Keycloak Configuration:**
+
 ```bash
 KC_HOSTNAME=keycloak-dev.railway.app
 KC_HTTP_ENABLED=false
@@ -221,72 +236,70 @@ KC_METRICS_ENABLED=true
 **Realm Configuration:**
 
 **Recommended Realm Structure:**
+
 ```json
 {
-  "realm": "eaa-dev",
-  "enabled": true,
-  "sslRequired": "external",
-  "registrationAllowed": false,
-  "loginWithEmailAllowed": true,
-  "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": true,
-  "editUsernameAllowed": false,
-  "bruteForceProtected": true,
-  "permanentLockout": false,
-  "maxFailureWaitSeconds": 900,
-  "minimumQuickLoginWaitSeconds": 60,
-  "waitIncrementSeconds": 60,
-  "quickLoginCheckMilliSeconds": 1000,
-  "maxDeltaTimeSeconds": 43200,
-  "failureFactor": 5
+	"realm": "eaa-dev",
+	"enabled": true,
+	"sslRequired": "external",
+	"registrationAllowed": false,
+	"loginWithEmailAllowed": true,
+	"duplicateEmailsAllowed": false,
+	"resetPasswordAllowed": true,
+	"editUsernameAllowed": false,
+	"bruteForceProtected": true,
+	"permanentLockout": false,
+	"maxFailureWaitSeconds": 900,
+	"minimumQuickLoginWaitSeconds": 60,
+	"waitIncrementSeconds": 60,
+	"quickLoginCheckMilliSeconds": 1000,
+	"maxDeltaTimeSeconds": 43200,
+	"failureFactor": 5
 }
 ```
 
 **Client Configuration (Backend API):**
+
 ```json
 {
-  "clientId": "eaa-backend",
-  "enabled": true,
-  "protocol": "openid-connect",
-  "publicClient": false,
-  "bearerOnly": true,
-  "standardFlowEnabled": false,
-  "directAccessGrantsEnabled": false,
-  "serviceAccountsEnabled": false,
-  "attributes": {
-    "access.token.lifespan": "3600",
-    "use.refresh.tokens": "true"
-  }
+	"clientId": "eaa-backend",
+	"enabled": true,
+	"protocol": "openid-connect",
+	"publicClient": false,
+	"bearerOnly": true,
+	"standardFlowEnabled": false,
+	"directAccessGrantsEnabled": false,
+	"serviceAccountsEnabled": false,
+	"attributes": {
+		"access.token.lifespan": "3600",
+		"use.refresh.tokens": "true"
+	}
 }
 ```
 
 **Client Configuration (Frontend SPA):**
+
 ```json
 {
-  "clientId": "eaa-frontend",
-  "enabled": true,
-  "protocol": "openid-connect",
-  "publicClient": true,
-  "standardFlowEnabled": true,
-  "implicitFlowEnabled": false,
-  "directAccessGrantsEnabled": false,
-  "redirectUris": [
-    "http://localhost:5173/*",
-    "https://dev.example.com/*"
-  ],
-  "webOrigins": [
-    "http://localhost:5173",
-    "https://dev.example.com"
-  ],
-  "attributes": {
-    "pkce.code.challenge.method": "S256"
-  }
+	"clientId": "eaa-frontend",
+	"enabled": true,
+	"protocol": "openid-connect",
+	"publicClient": true,
+	"standardFlowEnabled": true,
+	"implicitFlowEnabled": false,
+	"directAccessGrantsEnabled": false,
+	"redirectUris": ["http://localhost:5173/*", "https://dev.example.com/*"],
+	"webOrigins": ["http://localhost:5173", "https://dev.example.com"],
+	"attributes": {
+		"pkce.code.challenge.method": "S256"
+	}
 }
 ```
 
 **Operational Procedures:**
 
 **Initial Setup:**
+
 1. Deploy Keycloak template from Railway marketplace
 2. Access admin console at `https://<keycloak-domain>/admin`
 3. Login with `KEYCLOAK_ADMIN` credentials
@@ -296,11 +309,13 @@ KC_METRICS_ENABLED=true
 
 **Credential Recovery:**
 If admin credentials are lost:
+
 1. Delete Keycloak PostgreSQL database service
 2. Redeploy Keycloak with new `KEYCLOAK_ADMIN_PASSWORD`
 3. Reconfigure realm and clients (use realm export/import for faster recovery)
 
 **Implementation Suggestion:**
+
 - Export realm configuration to version control (excluding secrets)
 - Implement realm-as-code using Keycloak REST API or Terraform
 - Add custom themes for branding consistency
@@ -318,6 +333,7 @@ If admin credentials are lost:
 **API Compatibility:** AWS S3 API v4 signatures
 
 **Bucket Structure:**
+
 ```
 bucket-documents-dev/
 ├── {tenant-id-1}/
@@ -338,6 +354,7 @@ bucket-documents-dev/
 ```
 
 **Environment Variables:**
+
 ```bash
 # Storage endpoint
 STORAGE_ENDPOINT=https://railway.app  # Railway-provided endpoint
@@ -359,40 +376,43 @@ AWS_S3_FORCE_PATH_STYLE=false
 **Access Control Policy:**
 
 **Bucket Policy (Private by Default):**
+
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "DenyPublicAccess",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::bucket-documents-dev/*"
-    }
-  ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "DenyPublicAccess",
+			"Effect": "Deny",
+			"Principal": "*",
+			"Action": "s3:GetObject",
+			"Resource": "arn:aws:s3:::bucket-documents-dev/*"
+		}
+	]
 }
 ```
 
 **Presigned URL Configuration:**
+
 ```typescript
 // Upload presigned URL (15-minute TTL)
 const uploadUrl = await s3Client.getSignedUrl('putObject', {
-  Bucket: process.env.STORAGE_BUCKET,
-  Key: `${tenantId}/documents/${documentId}/original.pdf`,
-  ContentType: 'application/pdf',
-  Expires: 900  // 15 minutes
+	Bucket: process.env.STORAGE_BUCKET,
+	Key: `${tenantId}/documents/${documentId}/original.pdf`,
+	ContentType: 'application/pdf',
+	Expires: 900, // 15 minutes
 });
 
 // Download presigned URL (1-hour TTL)
 const downloadUrl = await s3Client.getSignedUrl('getObject', {
-  Bucket: process.env.STORAGE_BUCKET,
-  Key: `${tenantId}/documents/${documentId}/original.pdf`,
-  Expires: 3600  // 1 hour
+	Bucket: process.env.STORAGE_BUCKET,
+	Key: `${tenantId}/documents/${documentId}/original.pdf`,
+	Expires: 3600, // 1 hour
 });
 ```
 
 **Upload Flow:**
+
 ```
 1. Client → Backend: Request upload URL
 2. Backend: Validate permissions + generate presigned URL
@@ -403,6 +423,7 @@ const downloadUrl = await s3Client.getSignedUrl('getObject', {
 ```
 
 **Download Flow:**
+
 ```
 1. Client → Backend: Request document download
 2. Backend: Validate permissions + document ownership
@@ -412,6 +433,7 @@ const downloadUrl = await s3Client.getSignedUrl('getObject', {
 ```
 
 **Security Constraints:**
+
 - ❌ NEVER expose bucket with public read access
 - ❌ NEVER proxy file downloads through backend (bandwidth waste)
 - ❌ NEVER store credentials in code (use environment variables)
@@ -420,33 +442,35 @@ const downloadUrl = await s3Client.getSignedUrl('getObject', {
 - ✅ ALWAYS log document access in audit trail
 
 **Lifecycle Policies:**
+
 ```json
 {
-  "Rules": [
-    {
-      "Id": "DeleteTempUploads",
-      "Status": "Enabled",
-      "Prefix": "*/temp/",
-      "Expiration": {
-        "Days": 1
-      }
-    },
-    {
-      "Id": "ArchiveOldDocuments",
-      "Status": "Enabled",
-      "Prefix": "*/documents/",
-      "Transitions": [
-        {
-          "Days": 90,
-          "StorageClass": "GLACIER"
-        }
-      ]
-    }
-  ]
+	"Rules": [
+		{
+			"Id": "DeleteTempUploads",
+			"Status": "Enabled",
+			"Prefix": "*/temp/",
+			"Expiration": {
+				"Days": 1
+			}
+		},
+		{
+			"Id": "ArchiveOldDocuments",
+			"Status": "Enabled",
+			"Prefix": "*/documents/",
+			"Transitions": [
+				{
+					"Days": 90,
+					"StorageClass": "GLACIER"
+				}
+			]
+		}
+	]
 }
 ```
 
 **Implementation Suggestion:**
+
 - Implement multipart upload for files >5MB
 - Add virus scanning integration (ClamAV, AWS Macie)
 - Enable versioning for document audit trail
@@ -554,121 +578,125 @@ SENTRY_DSN=  # Optional: Sentry error tracking
 ### 3.2 Configuration Validation
 
 **Startup Validation Script:**
+
 ```typescript
 import { z } from 'zod';
 
 const configSchema = z.object({
-  // Application
-  APP_ENV: z.enum(['development', 'staging', 'production']),
-  APP_PORT: z.coerce.number().int().positive(),
-  
-  // Database
-  DATABASE_URL: z.string().url().startsWith('postgresql://'),
-  
-  // Storage
-  STORAGE_ENDPOINT: z.string().url(),
-  STORAGE_BUCKET: z.string().min(1),
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  
-  // OIDC
-  OIDC_ISSUER_URL: z.string().url(),
-  OIDC_CLIENT_ID: z.string().min(1),
-  OIDC_JWKS_URI: z.string().url(),
-  
-  // QR Signing
-  QR_SIGNING_KID: z.string().min(1),
-  QR_SIGNING_PRIVATE_KEY_PEM: z.string().includes('BEGIN EC PRIVATE KEY'),
-  QR_SIGNING_PUBLIC_KEY_PEM: z.string().includes('BEGIN PUBLIC KEY'),
+	// Application
+	APP_ENV: z.enum(['development', 'staging', 'production']),
+	APP_PORT: z.coerce.number().int().positive(),
+
+	// Database
+	DATABASE_URL: z.string().url().startsWith('postgresql://'),
+
+	// Storage
+	STORAGE_ENDPOINT: z.string().url(),
+	STORAGE_BUCKET: z.string().min(1),
+	AWS_ACCESS_KEY_ID: z.string().min(1),
+	AWS_SECRET_ACCESS_KEY: z.string().min(1),
+
+	// OIDC
+	OIDC_ISSUER_URL: z.string().url(),
+	OIDC_CLIENT_ID: z.string().min(1),
+	OIDC_JWKS_URI: z.string().url(),
+
+	// QR Signing
+	QR_SIGNING_KID: z.string().min(1),
+	QR_SIGNING_PRIVATE_KEY_PEM: z.string().includes('BEGIN EC PRIVATE KEY'),
+	QR_SIGNING_PUBLIC_KEY_PEM: z.string().includes('BEGIN PUBLIC KEY'),
 });
 
 export function validateConfig() {
-  try {
-    return configSchema.parse(process.env);
-  } catch (error) {
-    console.error('❌ Configuration validation failed:');
-    console.error(error.errors);
-    process.exit(1);
-  }
+	try {
+		return configSchema.parse(process.env);
+	} catch (error) {
+		console.error('❌ Configuration validation failed:');
+		console.error(error.errors);
+		process.exit(1);
+	}
 }
 ```
 
 ### 3.3 Connection Testing
 
 **Health Check Script:**
+
 ```typescript
 import { PrismaClient } from '@prisma/client';
 import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
 import axios from 'axios';
 
 async function checkDatabaseConnection() {
-  const prisma = new PrismaClient();
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Database connection: OK');
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection: FAILED', error.message);
-    return false;
-  } finally {
-    await prisma.$disconnect();
-  }
+	const prisma = new PrismaClient();
+	try {
+		await prisma.$queryRaw`SELECT 1`;
+		console.log('✅ Database connection: OK');
+		return true;
+	} catch (error) {
+		console.error('❌ Database connection: FAILED', error.message);
+		return false;
+	} finally {
+		await prisma.$disconnect();
+	}
 }
 
 async function checkStorageConnection() {
-  const s3 = new S3Client({
-    endpoint: process.env.STORAGE_ENDPOINT,
-    region: process.env.STORAGE_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-  });
-  
-  try {
-    await s3.send(new HeadBucketCommand({
-      Bucket: process.env.STORAGE_BUCKET,
-    }));
-    console.log('✅ Storage connection: OK');
-    return true;
-  } catch (error) {
-    console.error('❌ Storage connection: FAILED', error.message);
-    return false;
-  }
+	const s3 = new S3Client({
+		endpoint: process.env.STORAGE_ENDPOINT,
+		region: process.env.STORAGE_REGION,
+		credentials: {
+			accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+			secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+		},
+	});
+
+	try {
+		await s3.send(
+			new HeadBucketCommand({
+				Bucket: process.env.STORAGE_BUCKET,
+			}),
+		);
+		console.log('✅ Storage connection: OK');
+		return true;
+	} catch (error) {
+		console.error('❌ Storage connection: FAILED', error.message);
+		return false;
+	}
 }
 
 async function checkOIDCConnection() {
-  try {
-    const response = await axios.get(
-      `${process.env.OIDC_ISSUER_URL}/.well-known/openid-configuration`
-    );
-    console.log('✅ OIDC provider: OK');
-    console.log(`   Issuer: ${response.data.issuer}`);
-    return true;
-  } catch (error) {
-    console.error('❌ OIDC provider: FAILED', error.message);
-    return false;
-  }
+	try {
+		const response = await axios.get(
+			`${process.env.OIDC_ISSUER_URL}/.well-known/openid-configuration`,
+		);
+		console.log('✅ OIDC provider: OK');
+		console.log(`   Issuer: ${response.data.issuer}`);
+		return true;
+	} catch (error) {
+		console.error('❌ OIDC provider: FAILED', error.message);
+		return false;
+	}
 }
 
 async function runHealthChecks() {
-  console.log('🔍 Running infrastructure health checks...\n');
-  
-  const results = await Promise.all([
-    checkDatabaseConnection(),
-    checkStorageConnection(),
-    checkOIDCConnection(),
-  ]);
-  
-  const allHealthy = results.every(r => r);
-  
-  if (allHealthy) {
-    console.log('\n✅ All services healthy');
-    process.exit(0);
-  } else {
-    console.log('\n❌ Some services unhealthy');
-    process.exit(1);
-  }
+	console.log('🔍 Running infrastructure health checks...\n');
+
+	const results = await Promise.all([
+		checkDatabaseConnection(),
+		checkStorageConnection(),
+		checkOIDCConnection(),
+	]);
+
+	const allHealthy = results.every((r) => r);
+
+	if (allHealthy) {
+		console.log('\n✅ All services healthy');
+		process.exit(0);
+	} else {
+		console.log('\n❌ Some services unhealthy');
+		process.exit(1);
+	}
 }
 
 runHealthChecks();
@@ -718,11 +746,13 @@ runHealthChecks();
 **Issue: Database Connection Timeout**
 
 **Symptoms:**
+
 ```
 Error: P1001: Can't reach database server at host.railway.app:5432
 ```
 
 **Resolution Steps:**
+
 1. Verify Railway service status (dashboard)
 2. Check DATABASE_URL format and credentials
 3. Test connection with `psql` directly
@@ -733,11 +763,13 @@ Error: P1001: Can't reach database server at host.railway.app:5432
 **Issue: Keycloak Admin Console Inaccessible**
 
 **Symptoms:**
+
 ```
 502 Bad Gateway or Connection Refused
 ```
 
 **Resolution Steps:**
+
 1. Check Keycloak service status (Railway dashboard)
 2. Verify Keycloak database is running
 3. Check Keycloak logs for startup errors
@@ -748,11 +780,13 @@ Error: P1001: Can't reach database server at host.railway.app:5432
 **Issue: S3 Presigned URL Generation Fails**
 
 **Symptoms:**
+
 ```
 SignatureDoesNotMatch: The request signature we calculated does not match
 ```
 
 **Resolution Steps:**
+
 1. Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are correct
 2. Check `STORAGE_ENDPOINT` format (include https://)
 3. Verify `STORAGE_REGION` matches bucket region
@@ -762,11 +796,13 @@ SignatureDoesNotMatch: The request signature we calculated does not match
 **Issue: OIDC Token Validation Fails**
 
 **Symptoms:**
+
 ```
 JsonWebTokenError: invalid signature
 ```
 
 **Resolution Steps:**
+
 1. Verify `OIDC_ISSUER_URL` matches Keycloak realm URL exactly
 2. Check `OIDC_JWKS_URI` is accessible and returns public keys
 3. Verify token `iss` claim matches `OIDC_ISSUER_URL`
@@ -776,6 +812,7 @@ JsonWebTokenError: invalid signature
 ### 4.3 Backup and Recovery
 
 **Database Backup:**
+
 ```bash
 # Manual backup
 pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -785,6 +822,7 @@ psql $DATABASE_URL < backup_20251227_020000.sql
 ```
 
 **Keycloak Realm Export:**
+
 ```bash
 # Export realm configuration
 curl -X GET \
@@ -797,6 +835,7 @@ curl -X GET \
 ```
 
 **Storage Backup:**
+
 ```bash
 # Sync bucket to local storage
 aws s3 sync s3://<bucket> ./backup-storage \
@@ -808,23 +847,27 @@ aws s3 sync s3://<bucket> ./backup-storage \
 **Railway Resource Usage:**
 
 **Database Optimization:**
+
 - Use connection pooling to reduce connection overhead
 - Implement query result caching for expensive queries
 - Archive old data to reduce database size
 - Monitor slow queries and add indexes
 
 **Storage Optimization:**
+
 - Use presigned URLs for direct client uploads/downloads (avoid backend proxy)
 - Implement lifecycle policies to delete temporary files
 - Compress documents before upload when possible
 - Use appropriate storage classes (standard vs. archive)
 
 **Network Optimization:**
+
 - Leverage Railway private networking for inter-service communication
 - Minimize data transfer between services
 - Implement CDN for static assets (future)
 
 **Estimated Monthly Costs (Development):**
+
 - PostgreSQL (App): $5-10 (Starter plan)
 - PostgreSQL (Keycloak): $5-10 (Starter plan)
 - Keycloak Service: $5 (compute)
@@ -838,12 +881,14 @@ aws s3 sync s3://<bucket> ./backup-storage \
 ### 5.1 Development Security Posture
 
 **Data Classification:**
+
 - ❌ NEVER use production data in development
 - ❌ NEVER use real PII (personal identifiable information)
 - ✅ ALWAYS use synthetic test data
 - ✅ ALWAYS anonymize data if copying from production
 
 **Credential Management:**
+
 - ❌ NEVER commit `.env.local` to version control
 - ❌ NEVER share credentials via chat/email
 - ❌ NEVER use weak passwords (minimum 16 characters)
@@ -852,12 +897,14 @@ aws s3 sync s3://<bucket> ./backup-storage \
 - ✅ ALWAYS use unique passwords per service
 
 **Access Control:**
+
 - Keycloak admin access: Limited to 2-3 team members
 - Railway project access: Role-based (admin, developer, viewer)
 - Database direct access: Only for emergencies (use migrations)
 - Storage bucket access: Only via application (no direct access)
 
 **Network Security:**
+
 - All connections MUST use TLS 1.3
 - Verify SSL certificates (no self-signed in dev)
 - Use Railway private networking when available
@@ -865,23 +912,25 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 ### 5.2 Secrets Rotation Schedule
 
-| Secret | Rotation Frequency | Procedure |
-|--------|-------------------|-----------|
-| Database password | Quarterly | Railway dashboard → Regenerate → Update `.env.local` |
-| Storage credentials | Quarterly | Railway dashboard → Regenerate → Update `.env.local` |
-| Keycloak admin password | Quarterly | Keycloak console → Update → Store in password manager |
-| QR signing keys | Every 90 days | Generate new key pair → Update config → Maintain old key for validation period |
-| OIDC client secrets | Annually | Keycloak console → Regenerate → Update backend config |
+| Secret                  | Rotation Frequency | Procedure                                                                      |
+| ----------------------- | ------------------ | ------------------------------------------------------------------------------ |
+| Database password       | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
+| Storage credentials     | Quarterly          | Railway dashboard → Regenerate → Update `.env.local`                           |
+| Keycloak admin password | Quarterly          | Keycloak console → Update → Store in password manager                          |
+| QR signing keys         | Every 90 days      | Generate new key pair → Update config → Maintain old key for validation period |
+| OIDC client secrets     | Annually           | Keycloak console → Regenerate → Update backend config                          |
 
 ### 5.3 Incident Response
 
 **Security Incident Classification:**
+
 - **P0 (Critical):** Credential leak, unauthorized access, data breach
 - **P1 (High):** Service compromise, malware detection
 - **P2 (Medium):** Suspicious activity, failed login attempts
 - **P3 (Low):** Policy violation, configuration drift
 
 **Response Procedure (P0):**
+
 1. **Immediate:** Rotate all compromised credentials
 2. **Containment:** Disable affected services/accounts
 3. **Investigation:** Review audit logs for unauthorized access
@@ -897,13 +946,14 @@ aws s3 sync s3://<bucket> ./backup-storage \
 
 **Railway → AWS Migration:**
 
-| Railway Service | AWS Equivalent | Migration Complexity |
-|----------------|----------------|---------------------|
-| PostgreSQL | RDS PostgreSQL | Low (connection string change) |
-| S3 Bucket | S3 | Low (adapter configuration) |
-| Keycloak | Self-hosted on ECS/EKS or Cognito | Medium (OIDC adapter swap) |
+| Railway Service | AWS Equivalent                    | Migration Complexity           |
+| --------------- | --------------------------------- | ------------------------------ |
+| PostgreSQL      | RDS PostgreSQL                    | Low (connection string change) |
+| S3 Bucket       | S3                                | Low (adapter configuration)    |
+| Keycloak        | Self-hosted on ECS/EKS or Cognito | Medium (OIDC adapter swap)     |
 
 **Migration Checklist:**
+
 - [ ] Provision AWS services (RDS, S3, Cognito/ECS)
 - [ ] Update adapter configurations (connection strings)
 - [ ] Migrate database schema (pg_dump → restore)
@@ -945,6 +995,7 @@ aws s3 sync s3://<bucket> ./backup-storage \
 ### A.1 Essential Commands
 
 **Database:**
+
 ```bash
 # Connect to database
 psql $DATABASE_URL
@@ -960,6 +1011,7 @@ pg_dump $DATABASE_URL > backup.sql
 ```
 
 **Storage:**
+
 ```bash
 # List bucket contents
 aws s3 ls s3://$STORAGE_BUCKET --endpoint-url=$STORAGE_ENDPOINT
@@ -972,6 +1024,7 @@ aws s3 cp s3://$STORAGE_BUCKET/test/file.pdf . --endpoint-url=$STORAGE_ENDPOINT
 ```
 
 **Keycloak:**
+
 ```bash
 # Get admin token
 curl -X POST "https://<keycloak-domain>/realms/master/protocol/openid-connect/token" \
