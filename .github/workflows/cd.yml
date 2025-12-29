@@ -37,19 +37,3 @@ jobs:
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Notify deployment
-        if: success()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          custom_payload: |
-            {
-              text: "✅ Deployment successful to Railway",
-              attachments: [{
-                color: 'good',
-                text: `Commit: ${process.env.AS_COMMIT}\nAuthor: ${process.env.AS_AUTHOR}\nBranch: ${process.env.AS_REF}`
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
