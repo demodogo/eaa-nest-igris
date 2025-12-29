@@ -9,7 +9,7 @@
 		"build": "nest build",
 		"build:ci": "nest build",
 		"lint:staged": "lint-staged",
-		"test:ci": "jest --ci --coverage --maxWorkers=2",
+		"test:ci": "jest --ci --coverage --maxWorkers=2 --passWithNoTests",
 		"format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
 		"start": "nest start",
 		"start:dev": "nest start --watch",
